@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — 3D Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      overflow-x: hidden;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-bottom: 2px solid #333;
+    }
+    .header h1 { color: #FF4500; font-size: 24px; letter-spacing: 4px; }
+    .header p { color: #888; font-size: 12px; margin-top: 4px; }
+    .viewer-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+    .model-card {
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 16px;
+      width: 300px;
+      text-align: center;
+    }
+    .model-card h3 { color: #FFF; margin-bottom: 8px; }
+    .model-card .type { font-size: 12px; margin-bottom: 12px; }
+    canvas.voxel-view {
+      width: 240px;
+      height: 240px;
+      border-radius: 8px;
+      background: #0a0a1a;
+      cursor: grab;
+    }
+    canvas.voxel-view:active { cursor: grabbing; }
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin: 12px 0;
+      font-size: 12px;
+    }
+    .stat { padding: 4px; border-radius: 4px; background: rgba(255,255,255,0.05); }
+    .stat-atk { color: #FF6B6B; }
+    .stat-def { color: #4ECDC4; }
+    .stat-spd { color: #45B7D1; }
+    .stat-res { color: #96CEB4; }
+    .rarity {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      display: inline-block;
+      margin: 4px 0;
+    }
+    .abilities {
+      text-align: left;
+      font-size: 11px;
+      margin: 8px 0;
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+    }
+    .abilities div { padding: 2px 0; color: #CCC; }
+    .btn {
+      display: inline-block;
+      padding: 8px 16px;
+      margin: 4px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: #DDD;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+      text-decoration: none;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); border-color: #FF4500; }
+    .model-info {
+      font-size: 10px;
+      color: #666;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>BARCODE MONSTERS</h1>
+    <p>3D Model Viewer — WebGL Voxel Renderer</p>
+  </div>
+  <div class="viewer-container" id="viewer-container"></div>
+
+  <script type="module">
+    import { generateCard, renderCardSVG, generateAllCards } from '../generator/card.js';
+    import { getVoxelColor, ELEMENT_COLORS } from '../generator/monster.js';
+    import { getModelStats, GRID_SIZE, VOXEL_SIZE } from '../generator/stl.js';
+    import { voxelGridToSTL } from '../generator/stl.js';
+
+    // Load members
+    const members = await fetch('../data/members.json').then(r => r.json());
+    const cards = generateAllCards(members);
+    const container = document.getElementById('viewer-container');
+
+    cards.forEach((card, idx) => {
+      const div = document.createElement('div');
+      div.className = 'model-card';
+      div.style.borderColor = card.rarityColor;
+
+      const modelStats = getModelStats(card.voxelGrid);
+
+      div.innerHTML = `
+        <h3>${card.monsterName}</h3>
+        <div class="type" style="color: ${card.rarityColor}">
+          ${card.type} — ${card.element}
+        </div>
+        <canvas class="voxel-view" id="canvas-${idx}" width="240" height="240"></canvas>
+        <div class="stats-row">
+          <div class="stat stat-atk">ATK ${card.stats.atk}</div>
+          <div class="stat stat-def">DEF ${card.stats.def}</div>
+          <div class="stat stat-spd">SPD ${card.stats.spd}</div>
+          <div class="stat stat-res">RES ${card.stats.res}</div>
+        </div>
+        <span class="rarity" style="border: 1px solid ${card.rarityColor}; color: ${card.rarityColor}">
+          ${card.rarity} — ${card.stats.total} PWR
+        </span>
+        <div class="abilities">
+          ${card.abilities.map(a => `<div>▸ ${a}</div>`).join('')}
+        </div>
+        <div>
+          <button class="btn" onclick="downloadSTL(${idx})">↓ STL</button>
+          <button class="btn" onclick="downloadCard(${idx})">↓ Card</button>
+        </div>
+        <div class="model-info">
+          ${modelStats.triangleCount} triangles · ${modelStats.dimensions}<br>
+          ${modelStats.estimatedMaterial} · ${modelStats.estimatedPrintTime}
+        </div>
+      `;
+      container.appendChild(div);
+
+      // Render voxel model on canvas
+      renderVoxelCanvas(document.getElementById(`canvas-${idx}`), card);
+    });
+
+    function renderVoxelCanvas(canvas, card) {
+      const ctx = canvas.getContext('2d');
+      const size = 240;
+      let rotY = -0.6;
+      let rotX = 0.4;
+      let dragging = false;
+      let lastMouse = { x: 0, y: 0 };
+
+      canvas.addEventListener('mousedown', e => {
+        dragging = true;
+        lastMouse = { x: e.clientX, y: e.clientY };
+      });
+      canvas.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        rotY += (e.clientX - lastMouse.x) * 0.01;
+        rotX += (e.clientY - lastMouse.y) * 0.01;
+        rotX = Math.max(-1.2, Math.min(1.2, rotX));
+        lastMouse = { x: e.clientX, y: e.clientY };
+        draw();
+      });
+      canvas.addEventListener('mouseup', () => dragging = false);
+      canvas.addEventListener('mouseleave', () => dragging = false);
+
+      function project(x, y, z) {
+        // Center
+        const cx = x - 6, cy = y - 6, cz = z - 6;
+        // Rotate Y
+        const rx = cx * Math.cos(rotY) - cz * Math.sin(rotY);
+        const rz = cx * Math.sin(rotY) + cz * Math.cos(rotY);
+        // Rotate X
+        const ry = cy * Math.cos(rotX) - rz * Math.sin(rotX);
+        const rz2 = cy * Math.sin(rotX) + rz * Math.cos(rotX);
+        // Isometric-ish projection
+        const scale = 14;
+        const px = size / 2 + rx * scale;
+        const py = size / 2 - ry * scale + rz2 * 2;
+        return { x: px, y: py, depth: rz2 };
+      }
+
+      function draw() {
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, size, size);
+
+        // Collect visible voxels with depth
+        const voxels = [];
+        for (let y = 0; y < 12; y++) {
+          for (let z = 0; z < 12; z++) {
+            for (let x = 0; x < 12; x++) {
+              if (card.voxelGrid[y * 144 + z * 12 + x]) {
+                const p = project(x + 0.5, y + 0.5, z + 0.5);
+                const color = getVoxelColor(card.voxelGrid, x, y, z, card.element, card.seed);
+                voxels.push({ x: p.x, y: p.y, depth: p.depth, color });
+              }
+            }
+          }
+        }
+
+        // Sort back-to-front
+        voxels.sort((a, b) => a.depth - b.depth);
+
+        // Draw
+        const voxSize = 12;
+        for (const v of voxels) {
+          ctx.fillStyle = v.color;
+          ctx.fillRect(v.x - voxSize / 2, v.y - voxSize / 2, voxSize, voxSize);
+          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+          ctx.strokeRect(v.x - voxSize / 2, v.y - voxSize / 2, voxSize, voxSize);
+        }
+      }
+
+      draw();
+
+      // Auto-rotate
+      let autoRotate = setInterval(() => {
+        if (!dragging) {
+          rotY += 0.015;
+          draw();
+        }
+      }, 50);
+    }
+
+    // STL download
+    window.downloadSTL = function(idx) {
+      const card = cards[idx];
+      const stlData = voxelGridToSTL(card.voxelGrid, true);
+      const blob = new Blob([stlData], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${card.monsterName.replace(/\s+/g, '_')}.stl`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Card SVG download
+    window.downloadCard = function(idx) {
+      const card = cards[idx];
+      const svg = renderCardSVG(card);
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${card.monsterName.replace(/\s+/g, '_')}_card.svg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+  </script>
+</body>
+</html>

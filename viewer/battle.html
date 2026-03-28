@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — Battle</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 16px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-bottom: 2px solid #333;
+    }
+    .header h1 { color: #FF4500; font-size: 22px; letter-spacing: 3px; }
+    .battle-field {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 16px;
+    }
+    .player-zone {
+      width: 100%;
+      max-width: 700px;
+      padding: 16px;
+      border: 1px solid #333;
+      border-radius: 12px;
+      background: #1a1a2e;
+    }
+    .player-zone h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .hp-bar {
+      height: 8px;
+      background: #222;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .hp-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .field-slots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .card-slot {
+      width: 100px;
+      height: 140px;
+      border: 1px dashed #444;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      padding: 4px;
+    }
+    .card-slot:hover { border-color: #FF4500; }
+    .card-slot.filled {
+      border-style: solid;
+      background: rgba(255,255,255,0.03);
+    }
+    .card-slot .name { font-size: 9px; color: #FFF; text-align: center; margin-top: 4px; }
+    .card-slot .mini-stats { font-size: 8px; color: #888; }
+    .card-slot canvas { width: 60px; height: 60px; }
+    .energy-bar {
+      display: flex;
+      gap: 4px;
+      margin: 8px 0;
+      justify-content: center;
+    }
+    .energy-pip {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #FFD700;
+      border-radius: 50%;
+      font-size: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .energy-pip.filled { background: #FFD700; color: #000; }
+    .hand {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    .hand-card {
+      width: 70px;
+      height: 100px;
+      border: 1px solid #555;
+      border-radius: 6px;
+      background: #16213e;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      padding: 4px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+    .hand-card:hover { transform: translateY(-8px); border-color: #FF4500; }
+    .controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: #DDD;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); border-color: #FF4500; }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .battle-log {
+      width: 100%;
+      max-width: 700px;
+      margin-top: 12px;
+      padding: 12px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
+      font-size: 11px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-entry { padding: 2px 0; border-bottom: 1px solid #1a1a1a; }
+    .log-damage { color: #FF6B6B; }
+    .log-heal { color: #4ECDC4; }
+    .log-ability { color: #FFD700; }
+    .log-system { color: #888; }
+    .vs {
+      font-size: 28px;
+      color: #FF4500;
+      text-shadow: 0 0 20px rgba(255,69,0,0.5);
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>BATTLE ARENA</h1>
+  </div>
+
+  <div class="battle-field" id="battle-field">
+    <!-- Player 2 (opponent) -->
+    <div class="player-zone" id="p2-zone">
+      <h3>
+        <span id="p2-name">OPPONENT</span>
+        <span id="p2-hp-text">HP: 8000</span>
+      </h3>
+      <div class="hp-bar"><div class="hp-fill" id="p2-hp" style="width:100%; background:#FF6B6B;"></div></div>
+      <div class="field-slots" id="p2-field"></div>
+    </div>
+
+    <div class="vs">⚔ VS ⚔</div>
+
+    <!-- Player 1 (you) -->
+    <div class="player-zone" id="p1-zone">
+      <h3>
+        <span id="p1-name">YOU</span>
+        <span id="p1-hp-text">HP: 8000</span>
+      </h3>
+      <div class="hp-bar"><div class="hp-fill" id="p1-hp" style="width:100%; background:#4ECDC4;"></div></div>
+      <div class="field-slots" id="p1-field"></div>
+      <div class="energy-bar" id="p1-energy"></div>
+      <div class="hand" id="p1-hand"></div>
+      <div class="controls">
+        <button class="btn" id="btn-draw" onclick="drawCard()">Draw</button>
+        <button class="btn" id="btn-attack" onclick="attackPhase()">Attack</button>
+        <button class="btn" id="btn-end" onclick="endTurn()">End Turn</button>
+        <button class="btn" onclick="newGame()">New Game</button>
+      </div>
+    </div>
+
+    <div class="battle-log" id="log"></div>
+  </div>
+
+  <script type="module">
+    import { generateAllCards } from '../generator/card.js';
+
+    const members = await fetch('../data/members.json').then(r => r.json());
+    const allCards = generateAllCards(members);
+
+    // Game state
+    let state = null;
+
+    function shuffleDeck(cards) {
+      const deck = [...cards];
+      for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+      }
+      return deck;
+    }
+
+    function initGame() {
+      // Duplicate cards for two decks
+      const pool = [...allCards, ...allCards];
+      const shuffled = shuffleDeck(pool);
+
+      state = {
+        p1: { hp: 8000, energy: 2, hand: [], field: [], deck: shuffled.slice(0, 10) },
+        p2: { hp: 8000, energy: 2, hand: [], field: [], deck: shuffled.slice(10, 20) },
+        turn: 1,
+        phase: 'draw',
+        currentPlayer: 'p1',
+        log: []
+      };
+
+      // Initial draw
+      for (let i = 0; i < 5; i++) {
+        if (state.p1.deck.length) state.p1.hand.push(state.p1.deck.pop());
+        if (state.p2.deck.length) state.p2.hand.push(state.p2.deck.pop());
+      }
+
+      addLog('Game started! Draw a card to begin.', 'system');
+      render();
+    }
+
+    function addLog(msg, type = 'system') {
+      state.log.unshift({ msg, type });
+      if (state.log.length > 50) state.log.pop();
+    }
+
+    window.drawCard = function() {
+      const player = state.p1;
+      if (player.deck.length === 0) {
+        player.hp -= 500;
+        addLog('Deck empty! Take 500 damage.', 'damage');
+      } else {
+        const card = player.deck.pop();
+        player.hand.push(card);
+        addLog(`Drew ${card.monsterName}`, 'system');
+      }
+      state.phase = 'play';
+      render();
+    };
+
+    window.playCard = function(handIdx) {
+      const player = state.p1;
+      if (player.field.length >= 5) { addLog('Field full!', 'system'); return; }
+      const card = player.hand[handIdx];
+      if (player.energy < card.tier) { addLog(`Need ${card.tier}⚡ to play ${card.monsterName}`, 'system'); return; }
+
+      player.energy -= card.tier;
+      player.field.push({ ...card, turnsOnField: 0 });
+      player.hand.splice(handIdx, 1);
+      addLog(`Played ${card.monsterName} (${card.type}/${card.element})`, 'ability');
+      render();
+    };
+
+    window.attackPhase = function() {
+      if (state.p1.field.length === 0) { addLog('No monsters to attack with!', 'system'); return; }
+
+      // First monster attacks
+      const attacker = state.p1.field[0];
+      const atkVal = attacker.stats.atk;
+
+      if (state.p2.field.length === 0) {
+        // Direct attack
+        state.p2.hp -= atkVal;
+        addLog(`${attacker.monsterName} attacks directly for ${atkVal}!`, 'damage');
+      } else {
+        const defender = state.p2.field[0];
+        let bonus = 0;
+        // Element check (simplified)
+        const cycle = { FIRE: 'METAL', METAL: 'WIND', WIND: 'CRYSTAL', CRYSTAL: 'VOID', VOID: 'PRISM', PRISM: 'FIRE' };
+        if (cycle[attacker.element] === defender.element) bonus = 500;
+        if (cycle[defender.element] === attacker.element) bonus = -500;
+
+        const effectiveAtk = atkVal + bonus;
+        const defVal = defender.stats.def;
+
+        if (effectiveAtk > defVal) {
+          const dmg = effectiveAtk - defVal;
+          state.p2.hp -= dmg;
+          state.p2.field.shift();
+          addLog(`${attacker.monsterName} destroys ${defender.monsterName}! ${dmg} damage.`, 'damage');
+        } else {
+          const recoil = defVal - effectiveAtk;
+          state.p1.hp -= recoil;
+          addLog(`${attacker.monsterName} bounced off ${defender.monsterName}! ${recoil} recoil.`, 'damage');
+        }
+        if (bonus > 0) addLog('Element advantage! +500 ATK', 'ability');
+        if (bonus < 0) addLog('Element disadvantage! -500 ATK', 'damage');
+      }
+
+      checkWin();
+      render();
+    };
+
+    window.endTurn = function() {
+      // Increment field turns
+      state.p1.field.forEach(c => {
+        c.turnsOnField++;
+        if (c.turnsOnField === 3) {
+          c.stats = {
+            atk: Math.floor(c.stats.atk * 1.2),
+            def: Math.floor(c.stats.def * 1.2),
+            spd: Math.floor(c.stats.spd * 1.2),
+            res: Math.floor(c.stats.res * 1.2),
+            total: Math.floor(c.stats.total * 1.2)
+          };
+          addLog(`${c.monsterName} EVOLVED! All stats +20%!`, 'ability');
+        }
+      });
+
+      state.p1.energy = Math.min(10, state.p1.energy + 1);
+
+      // AI turn (simple)
+      aiTurn();
+
+      state.turn++;
+      state.phase = 'draw';
+      render();
+    };
+
+    function aiTurn() {
+      const ai = state.p2;
+      // Draw
+      if (ai.deck.length > 0) ai.hand.push(ai.deck.pop());
+      else ai.hp -= 500;
+
+      // Play strongest card if possible
+      if (ai.hand.length > 0 && ai.field.length < 5) {
+        const affordable = ai.hand.filter(c => c.tier <= ai.energy);
+        if (affordable.length > 0) {
+          affordable.sort((a, b) => b.stats.total - a.stats.total);
+          const card = affordable[0];
+          ai.energy -= card.tier;
+          ai.field.push({ ...card, turnsOnField: 0 });
+          ai.hand.splice(ai.hand.indexOf(card), 1);
+          addLog(`Opponent plays ${card.monsterName}`, 'system');
+        }
+      }
+
+      // Attack
+      if (ai.field.length > 0) {
+        const attacker = ai.field[0];
+        if (state.p1.field.length === 0) {
+          state.p1.hp -= attacker.stats.atk;
+          addLog(`${attacker.monsterName} attacks you directly for ${attacker.stats.atk}!`, 'damage');
+        } else {
+          const defender = state.p1.field[0];
+          if (attacker.stats.atk > defender.stats.def) {
+            const dmg = attacker.stats.atk - defender.stats.def;
+            state.p1.hp -= dmg;
+            state.p1.field.shift();
+            addLog(`${attacker.monsterName} destroys your ${defender.monsterName}! ${dmg} damage.`, 'damage');
+          }
+        }
+      }
+
+      ai.energy = Math.min(10, ai.energy + 1);
+      ai.field.forEach(c => c.turnsOnField++);
+
+      checkWin();
+    }
+
+    function checkWin() {
+      if (state.p1.hp <= 0) {
+        state.p1.hp = 0;
+        addLog('YOU LOSE! Your HP reached 0.', 'damage');
+      }
+      if (state.p2.hp <= 0) {
+        state.p2.hp = 0;
+        addLog('YOU WIN! Opponent HP reached 0!', 'heal');
+      }
+    }
+
+    function render() {
+      // HP bars
+      document.getElementById('p1-hp').style.width = `${(state.p1.hp / 8000) * 100}%`;
+      document.getElementById('p2-hp').style.width = `${(state.p2.hp / 8000) * 100}%`;
+      document.getElementById('p1-hp-text').textContent = `HP: ${Math.max(0, state.p1.hp)}`;
+      document.getElementById('p2-hp-text').textContent = `HP: ${Math.max(0, state.p2.hp)}`;
+
+      // Energy
+      const energyDiv = document.getElementById('p1-energy');
+      energyDiv.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        const pip = document.createElement('div');
+        pip.className = `energy-pip${i < state.p1.energy ? ' filled' : ''}`;
+        pip.textContent = '⚡';
+        energyDiv.appendChild(pip);
+      }
+
+      // Fields
+      renderField('p1-field', state.p1.field);
+      renderField('p2-field', state.p2.field);
+
+      // Hand
+      const handDiv = document.getElementById('p1-hand');
+      handDiv.innerHTML = '';
+      state.p1.hand.forEach((card, i) => {
+        const div = document.createElement('div');
+        div.className = 'hand-card';
+        div.style.borderColor = card.rarityColor;
+        div.innerHTML = `<div style="color:${card.rarityColor};font-size:7px">${card.type}</div><div style="font-size:9px;color:#FFF;margin:4px 0">${card.monsterName}</div><div style="color:#FF6B6B">ATK ${card.stats.atk}</div><div style="color:#4ECDC4">DEF ${card.stats.def}</div><div style="color:#888">${card.tier}⚡</div>`;
+        div.onclick = () => window.playCard(i);
+        handDiv.appendChild(div);
+      });
+
+      // Log
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML = state.log.map(l =>
+        `<div class="log-entry log-${l.type}">${l.msg}</div>`
+      ).join('');
+    }
+
+    function renderField(containerId, field) {
+      const div = document.getElementById(containerId);
+      div.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const slot = document.createElement('div');
+        slot.className = `card-slot${i < field.length ? ' filled' : ''}`;
+        if (i < field.length) {
+          const card = field[i];
+          slot.style.borderColor = card.rarityColor;
+          slot.innerHTML = `<div class="name" style="color:${card.rarityColor}">${card.monsterName}</div><div class="mini-stats">ATK ${card.stats.atk} DEF ${card.stats.def}</div><div class="mini-stats">${card.element} T${card.turnsOnField}</div>`;
+        } else {
+          slot.innerHTML = '<div style="color:#444">Empty</div>';
+        }
+        div.appendChild(slot);
+      }
+    }
+
+    window.newGame = initGame;
+    initGame();
+  </script>
+</body>
+</html>

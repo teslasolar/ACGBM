@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — AR View</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      width: 100%;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-bottom: 2px solid #333;
+    }
+    .header h1 { color: #FF4500; font-size: 20px; letter-spacing: 3px; }
+    .ar-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+      margin: 20px;
+      background: #111;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #ar-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #ar-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .monster-overlay {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+    }
+    .info {
+      text-align: center;
+      padding: 16px;
+      max-width: 500px;
+    }
+    .info p {
+      font-size: 12px;
+      color: #888;
+      margin: 4px 0;
+    }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 8px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: #DDD;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); border-color: #FF4500; }
+    .status {
+      color: #FF4500;
+      font-size: 14px;
+      margin: 12px;
+    }
+    .card-select {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 12px;
+    }
+    .card-chip {
+      padding: 6px 12px;
+      border: 1px solid #444;
+      border-radius: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .card-chip:hover, .card-chip.active {
+      border-color: #FF4500;
+      background: rgba(255,69,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AR VIEWER</h1>
+    <p style="color: #888; font-size: 11px; margin-top: 4px;">WebXR Augmented Reality Monster Overlay</p>
+  </div>
+
+  <div class="card-select" id="card-select"></div>
+  <div class="status" id="status">Select a monster to view in AR</div>
+
+  <div class="ar-container">
+    <video id="ar-video" autoplay playsinline></video>
+    <canvas id="ar-overlay"></canvas>
+  </div>
+
+  <div class="info">
+    <p>Point your camera at a flat surface.</p>
+    <p>The monster will appear overlaid on the camera feed.</p>
+    <p>Works best on mobile devices with WebXR support.</p>
+    <button class="btn" onclick="toggleCamera()">Toggle Camera</button>
+    <button class="btn" onclick="window.location.href='index.html'">3D Viewer</button>
+  </div>
+
+  <script type="module">
+    import { generateAllCards } from '../generator/card.js';
+    import { getVoxelColor } from '../generator/monster.js';
+
+    const members = await fetch('../data/members.json').then(r => r.json());
+    const cards = generateAllCards(members);
+    let selectedCard = null;
+    let cameraActive = false;
+
+    // Card selection chips
+    const selectDiv = document.getElementById('card-select');
+    cards.forEach((card, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'card-chip';
+      chip.style.color = card.rarityColor;
+      chip.textContent = card.monsterName;
+      chip.onclick = () => {
+        document.querySelectorAll('.card-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedCard = card;
+        document.getElementById('status').textContent = `Showing: ${card.monsterName}`;
+        renderOverlay();
+      };
+      selectDiv.appendChild(chip);
+    });
+
+    const video = document.getElementById('ar-video');
+    const overlay = document.getElementById('ar-overlay');
+    const ctx = overlay.getContext('2d');
+
+    window.toggleCamera = async function() {
+      if (cameraActive) {
+        video.srcObject?.getTracks().forEach(t => t.stop());
+        cameraActive = false;
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        video.srcObject = stream;
+        cameraActive = true;
+        overlay.width = video.videoWidth || 500;
+        overlay.height = video.videoHeight || 500;
+      } catch (e) {
+        document.getElementById('status').textContent = 'Camera unavailable — showing preview mode';
+      }
+    };
+
+    function renderOverlay() {
+      if (!selectedCard) return;
+      const card = selectedCard;
+      const w = overlay.width || 500;
+      const h = overlay.height || 500;
+      overlay.width = w;
+      overlay.height = h;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Render voxel monster centered
+      const voxelSize = Math.min(w, h) / 16;
+      const offsetX = (w - 12 * voxelSize) / 2;
+      const offsetY = (h - 12 * voxelSize) / 2;
+
+      // Front view (z=6)
+      for (let y = 11; y >= 0; y--) {
+        for (let x = 0; x < 12; x++) {
+          const idx = y * 144 + 6 * 12 + x;
+          if (card.voxelGrid[idx]) {
+            const color = getVoxelColor(card.voxelGrid, x, y, 6, card.element, card.seed);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.85;
+            ctx.fillRect(
+              offsetX + x * voxelSize,
+              offsetY + (11 - y) * voxelSize,
+              voxelSize - 1,
+              voxelSize - 1
+            );
+          }
+        }
+      }
+
+      // Name label
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(offsetX, offsetY + 12 * voxelSize + 4, 12 * voxelSize, 24);
+      ctx.fillStyle = '#FFF';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(card.monsterName, w / 2, offsetY + 12 * voxelSize + 20);
+
+      // Stats
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(offsetX, offsetY + 12 * voxelSize + 30, 12 * voxelSize, 16);
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#FF6B6B';
+      ctx.textAlign = 'left';
+      ctx.fillText(`ATK ${card.stats.atk}`, offsetX + 4, offsetY + 12 * voxelSize + 42);
+      ctx.fillStyle = '#4ECDC4';
+      ctx.fillText(`DEF ${card.stats.def}`, offsetX + 80, offsetY + 12 * voxelSize + 42);
+      ctx.fillStyle = '#45B7D1';
+      ctx.fillText(`SPD ${card.stats.spd}`, offsetX + 150, offsetY + 12 * voxelSize + 42);
+    }
+
+    // Animate
+    setInterval(() => {
+      if (cameraActive && selectedCard) renderOverlay();
+    }, 100);
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+{
+  "skill_to_ability": {
+    "TDD": {
+      "name": "Test Shield",
+      "description": "Negate one attack per turn",
+      "cost": 1,
+      "type": "defensive"
+    },
+    "CI/CD": {
+      "name": "Pipeline",
+      "description": "Play 2 cards in sequence",
+      "cost": 2,
+      "type": "utility"
+    },
+    "ISA-95": {
+      "name": "Hierarchy",
+      "description": "Buff all lower-tier cards on field by +300 ATK",
+      "cost": 2,
+      "type": "buff"
+    },
+    "ASS-OS": {
+      "name": "Seven Rings",
+      "description": "View opponent's hand",
+      "cost": 1,
+      "type": "intel"
+    },
+    "Controls": {
+      "name": "Feedback Loop",
+      "description": "Copy last ability played",
+      "cost": 2,
+      "type": "utility"
+    },
+    "Vagal": {
+      "name": "Resonance",
+      "description": "Heal 500 HP per turn",
+      "cost": 1,
+      "type": "healing"
+    },
+    "Flywheel": {
+      "name": "Momentum",
+      "description": "Each turn this card stays, +200 ATK",
+      "cost": 0,
+      "type": "passive"
+    },
+    "Blockchain": {
+      "name": "Immutable",
+      "description": "Card cannot be destroyed for 3 turns",
+      "cost": 3,
+      "type": "defensive"
+    },
+    "ECC": {
+      "name": "Error Correct",
+      "description": "Revive one destroyed card",
+      "cost": 3,
+      "type": "utility"
+    },
+    "Python": {
+      "name": "Script Injection",
+      "description": "Modify any card's stats by +/-200",
+      "cost": 2,
+      "type": "offensive"
+    },
+    "Stickers": {
+      "name": "Mark",
+      "description": "Tag a card, it takes double damage",
+      "cost": 1,
+      "type": "offensive"
+    },
+    "Alchemy": {
+      "name": "Transmute",
+      "description": "Swap any two cards' positions",
+      "cost": 2,
+      "type": "utility"
+    },
+    "Horses": {
+      "name": "Stampede",
+      "description": "Attack all opponent cards at once",
+      "cost": 3,
+      "type": "offensive"
+    },
+    "80085": {
+      "name": "Lightweight",
+      "description": "Costs 0 energy to play",
+      "cost": 0,
+      "type": "passive"
+    },
+    "SCADA": {
+      "name": "Overwatch",
+      "description": "See all hidden cards on field",
+      "cost": 1,
+      "type": "intel"
+    },
+    "Ignition": {
+      "name": "Spark",
+      "description": "Deal 300 direct damage to opponent HP",
+      "cost": 1,
+      "type": "offensive"
+    },
+    "Radar": {
+      "name": "Foresight",
+      "description": "Look at top 3 cards of your deck",
+      "cost": 1,
+      "type": "intel"
+    },
+    "AWP": {
+      "name": "Ghost Protocol",
+      "description": "Card becomes untargetable for 1 turn",
+      "cost": 2,
+      "type": "defensive"
+    },
+    "Agents": {
+      "name": "Swarm",
+      "description": "Summon two 500/500 token monsters",
+      "cost": 3,
+      "type": "summon"
+    },
+    "Metrics": {
+      "name": "Measure",
+      "description": "Reveal exact HP of all opponent cards",
+      "cost": 0,
+      "type": "intel"
+    },
+    "Velocity": {
+      "name": "Overdrive",
+      "description": "+500 SPD, attack first regardless of turn",
+      "cost": 2,
+      "type": "buff"
+    },
+    "Delphi": {
+      "name": "Oracle Sight",
+      "description": "Predict and counter next opponent ability",
+      "cost": 2,
+      "type": "defensive"
+    },
+    "PLC": {
+      "name": "Hard Logic",
+      "description": "Lock one card's stats — cannot be modified",
+      "cost": 1,
+      "type": "utility"
+    },
+    "Models": {
+      "name": "Polymorph",
+      "description": "Transform one card into a copy of another",
+      "cost": 3,
+      "type": "utility"
+    }
+  }
+}

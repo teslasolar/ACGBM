@@ -1,0 +1,74 @@
+[
+  {
+    "id": "thomas",
+    "name": "Thomas",
+    "role": "Founder",
+    "tier": 3,
+    "year": 20,
+    "color": "#FF4500",
+    "skills": ["ASS-OS", "ISA-95", "Flywheel", "Blockchain", "Controls", "Alchemy", "Python", "Horses"]
+  },
+  {
+    "id": "quinn",
+    "name": "Quinn",
+    "role": "Architect",
+    "tier": 3,
+    "year": 21,
+    "color": "#00BFFF",
+    "skills": ["ISA-95", "SCADA", "Ignition", "PLC", "Controls", "Models", "Python"]
+  },
+  {
+    "id": "riley",
+    "name": "Riley",
+    "role": "Engineer",
+    "tier": 2,
+    "year": 22,
+    "color": "#C0C0C0",
+    "skills": ["CI/CD", "TDD", "Python", "Agents", "ECC", "Metrics"]
+  },
+  {
+    "id": "jordan",
+    "name": "Jordan",
+    "role": "Content",
+    "tier": 2,
+    "year": 22,
+    "color": "#32CD32",
+    "skills": ["Stickers", "Delphi", "Velocity", "AWP", "80085"]
+  },
+  {
+    "id": "morgan",
+    "name": "Morgan",
+    "role": "Protocol",
+    "tier": 2,
+    "year": 23,
+    "color": "#8A2BE2",
+    "skills": ["Blockchain", "ECC", "ASS-OS", "Radar"]
+  },
+  {
+    "id": "sage",
+    "name": "Sage",
+    "role": "Creative",
+    "tier": 1,
+    "year": 24,
+    "color": "#FF69B4",
+    "skills": ["Stickers", "Alchemy", "80085"]
+  },
+  {
+    "id": "avery",
+    "name": "Avery",
+    "role": "Philosopher",
+    "tier": 1,
+    "year": 24,
+    "color": "#FFD700",
+    "skills": ["Vagal", "Flywheel", "Delphi"]
+  },
+  {
+    "id": "blake",
+    "name": "Blake",
+    "role": "Breaker",
+    "tier": 1,
+    "year": 25,
+    "color": "#00FF7F",
+    "skills": ["TDD", "Horses", "AWP"]
+  }
+]

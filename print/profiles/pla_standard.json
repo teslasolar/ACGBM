@@ -1,0 +1,37 @@
+{
+  "name": "PLA Standard — Barcode Monster Figurine",
+  "description": "Standard profile for printing 24mm voxel monster figurines",
+  "material": "PLA",
+  "nozzle_temp": 200,
+  "bed_temp": 60,
+  "print_speed": 50,
+  "layer_height": 0.2,
+  "first_layer_height": 0.3,
+  "infill_percent": 15,
+  "infill_pattern": "gyroid",
+  "wall_count": 2,
+  "top_layers": 3,
+  "bottom_layers": 3,
+  "supports": {
+    "enabled": true,
+    "type": "tree",
+    "overhang_angle": 45,
+    "density": 10
+  },
+  "retraction": {
+    "distance": 1.0,
+    "speed": 45
+  },
+  "cooling": {
+    "fan_speed": 100,
+    "min_layer_time": 10
+  },
+  "model_specs": {
+    "dimensions_mm": [24, 24, 24],
+    "voxel_size_mm": 2.0,
+    "estimated_time_min": 15,
+    "estimated_material_g": 2,
+    "estimated_cost_usd": 0.10
+  },
+  "notes": "Figurine-grade print. Not structural. Paint-ready surface at 0.12mm layer height."
+}

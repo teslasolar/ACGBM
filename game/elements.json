@@ -1,0 +1,25 @@
+{
+  "elements": ["FIRE", "METAL", "WIND", "CRYSTAL", "VOID", "PRISM", "LIGHTNING", "AETHER"],
+  "cycle": {
+    "FIRE": "METAL",
+    "METAL": "WIND",
+    "WIND": "CRYSTAL",
+    "CRYSTAL": "VOID",
+    "VOID": "PRISM",
+    "PRISM": "FIRE"
+  },
+  "special": {
+    "LIGHTNING": {
+      "advantage": "ALL",
+      "cost_multiplier": 2,
+      "description": "Beats everything but costs double energy"
+    },
+    "AETHER": {
+      "advantage": "NONE",
+      "bonus": "DRAW_2",
+      "description": "Beats nothing but draws 2 cards"
+    }
+  },
+  "advantage_bonus": 500,
+  "disadvantage_penalty": -500
+}

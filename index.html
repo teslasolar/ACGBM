@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — Guild Trading Card Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: linear-gradient(180deg, #1a1a2e 0%, #0a0a1a 100%);
+      border-bottom: 1px solid #222;
+    }
+    .hero h1 {
+      font-size: 42px;
+      color: #FF4500;
+      letter-spacing: 6px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 30px rgba(255,69,0,0.3);
+    }
+    .hero .subtitle {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 24px;
+    }
+    .hero .tagline {
+      font-size: 12px;
+      color: #555;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Nav */
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      flex-wrap: wrap;
+      background: #111;
+      border-bottom: 1px solid #222;
+    }
+    .nav a {
+      padding: 10px 20px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #DDD;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .nav a:hover {
+      border-color: #FF4500;
+      background: rgba(255,69,0,0.1);
+      color: #FF4500;
+    }
+
+    /* Cards gallery */
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card-container {
+      transition: transform 0.3s;
+    }
+    .card-container:hover {
+      transform: scale(1.05) rotate(1deg);
+    }
+
+    /* Info sections */
+    .section {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .section h2 {
+      color: #FF4500;
+      font-size: 20px;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+    .section p {
+      color: #999;
+      font-size: 13px;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+
+    /* Element table */
+    .element-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .element-chip {
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #222;
+      text-align: center;
+    }
+    .element-chip .name { font-size: 12px; font-weight: bold; }
+    .element-chip .info { font-size: 10px; color: #888; margin-top: 4px; }
+
+    /* Stats */
+    .stat-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+    .stat-table th, .stat-table td {
+      padding: 8px;
+      border-bottom: 1px solid #1a1a1a;
+      text-align: left;
+    }
+    .stat-table th { color: #FF4500; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid #1a1a1a;
+      color: #444;
+      font-size: 11px;
+    }
+    .footer .motto {
+      color: #FF4500;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    /* Rarity styles */
+    .rarity-COMMON { border-color: #CD7F32 !important; }
+    .rarity-UNCOMMON { border-color: #C0C0C0 !important; }
+    .rarity-RARE { border-color: #FFD700 !important; }
+    .rarity-EPIC { border-color: #9400D3 !important; }
+    .rarity-LEGENDARY { border-color: #FF4500 !important; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <h1>BARCODE MONSTERS</h1>
+    <div class="subtitle">Cards Are Barcodes · Models Are Printable · Monsters Are Members</div>
+    <div class="tagline">
+      A trading card game where every card IS a scannable barcode, every monster
+      IS generated from real guild member data, and every card has a unique
+      3D-printable STL model. The DATA designs the monsters.
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a href="viewer/index.html">3D Viewer</a>
+    <a href="viewer/battle.html">Battle Arena</a>
+    <a href="scanner/scan.html">Card Scanner</a>
+    <a href="viewer/ar.html">AR View</a>
+    <a href="game/rules.md">Rules</a>
+  </nav>
+
+  <div class="gallery" id="gallery"></div>
+
+  <div class="section">
+    <h2>HOW IT WORKS</h2>
+    <p>Each guild member's data — name, role, skills, tier — deterministically generates
+    a unique monster card. The same member always produces the same monster. No artist needed.
+    The algorithm IS the artist.</p>
+    <p>Every card has scannable barcodes encoding the card's identity, element, and rarity
+    across three data channels. Scan with any barcode reader for the card ID, or use the
+    Barcode Monsters app to decode all three channels.</p>
+    <p>Every monster has a unique 12×12×12 voxel model that can be exported as STL and
+    3D-printed at 24mm × 24mm × 24mm. ~15 minute print, ~2g PLA, ~$0.10 per model.</p>
+  </div>
+
+  <div class="section">
+    <h2>ELEMENTS</h2>
+    <div class="element-grid" id="elements"></div>
+    <p style="margin-top: 12px; font-size: 11px;">
+      FIRE &gt; METAL &gt; WIND &gt; CRYSTAL &gt; VOID &gt; PRISM &gt; FIRE<br>
+      LIGHTNING beats all (costs 2x energy) · AETHER beats none (draws 2 cards)
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>MONSTER TYPES</h2>
+    <table class="stat-table">
+      <tr><th>Role</th><th>Monster Type</th><th>Element</th></tr>
+      <tr><td>Founder</td><td>FORGEMASTER</td><td style="color:#FF4500">FIRE</td></tr>
+      <tr><td>Architect</td><td>SENTINEL</td><td style="color:#00BFFF">CRYSTAL</td></tr>
+      <tr><td>Engineer</td><td>CONSTRUCT</td><td style="color:#708090">METAL</td></tr>
+      <tr><td>Content</td><td>WEAVER</td><td style="color:#32CD32">WIND</td></tr>
+      <tr><td>Protocol</td><td>PHANTOM</td><td style="color:#8A2BE2">VOID</td></tr>
+      <tr><td>Creative</td><td>SHIFTER</td><td style="color:#FF69B4">PRISM</td></tr>
+      <tr><td>Philosopher</td><td>ORACLE</td><td style="color:#FFD700">AETHER</td></tr>
+      <tr><td>Breaker</td><td>DISRUPTOR</td><td style="color:#00FF7F">LIGHTNING</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>RARITY</h2>
+    <table class="stat-table">
+      <tr><th>Rarity</th><th>Total Power</th><th>Border</th></tr>
+      <tr><td style="color:#CD7F32">COMMON</td><td>&lt; 4,000</td><td>Bronze</td></tr>
+      <tr><td style="color:#C0C0C0">UNCOMMON</td><td>&lt; 6,000</td><td>Silver</td></tr>
+      <tr><td style="color:#FFD700">RARE</td><td>&lt; 8,000</td><td>Gold</td></tr>
+      <tr><td style="color:#9400D3">EPIC</td><td>&lt; 10,000</td><td>Holographic</td></tr>
+      <tr><td style="color:#FF4500">LEGENDARY</td><td>10,000+</td><td>Animated</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>PRINT YOUR MONSTER</h2>
+    <p>Download the STL from the 3D Viewer or by scanning the card barcode.
+    Print at 24mm³ on any FDM printer.</p>
+    <table class="stat-table">
+      <tr><th>Spec</th><th>Value</th></tr>
+      <tr><td>Model Size</td><td>24mm × 24mm × 24mm</td></tr>
+      <tr><td>Voxel Size</td><td>2mm per voxel</td></tr>
+      <tr><td>Material</td><td>PLA (~2g per model)</td></tr>
+      <tr><td>Print Time</td><td>~15 minutes at 0.2mm layers</td></tr>
+      <tr><td>Cost</td><td>~$0.10 per model</td></tr>
+      <tr><td>Battle Bonus</td><td>+200 ATK if printed model at table</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    <div class="motto">THE CARD IS THE MEMBER · THE MEMBER IS THE GUILD · THE GUILD IS THE GAME</div>
+    <p>BARCODE MONSTERS — GEN-1 · ACG GUILD · #/510</p>
+    <p>scan the barcode · summon the monster · print it at 0.2mm layer height</p>
+  </div>
+
+  <script type="module">
+    import { generateAllCards, renderCardSVG } from './generator/card.js';
+    import { ELEMENT_COLORS } from './generator/monster.js';
+
+    const members = await fetch('./data/members.json').then(r => r.json());
+    const cards = generateAllCards(members);
+
+    // Render card gallery
+    const gallery = document.getElementById('gallery');
+    cards.forEach(card => {
+      const svg = renderCardSVG(card);
+      const div = document.createElement('div');
+      div.className = `card-container rarity-${card.rarity}`;
+      div.innerHTML = svg;
+      div.style.cursor = 'pointer';
+      div.title = `${card.monsterName} — ${card.rarity} — ${card.memberName}`;
+      gallery.appendChild(div);
+    });
+
+    // Render elements
+    const elementData = [
+      { name: 'FIRE', color: '#FF4500', beats: 'METAL' },
+      { name: 'METAL', color: '#708090', beats: 'WIND' },
+      { name: 'WIND', color: '#32CD32', beats: 'CRYSTAL' },
+      { name: 'CRYSTAL', color: '#00BFFF', beats: 'VOID' },
+      { name: 'VOID', color: '#8A2BE2', beats: 'PRISM' },
+      { name: 'PRISM', color: '#FF69B4', beats: 'FIRE' },
+      { name: 'LIGHTNING', color: '#00FF7F', beats: 'ALL (2x cost)' },
+      { name: 'AETHER', color: '#FFD700', beats: 'NONE (draw 2)' }
+    ];
+
+    const elemDiv = document.getElementById('elements');
+    elementData.forEach(e => {
+      const chip = document.createElement('div');
+      chip.className = 'element-chip';
+      chip.innerHTML = `<div class="name" style="color:${e.color}">${e.name}</div><div class="info">Beats: ${e.beats}</div>`;
+      elemDiv.appendChild(chip);
+    });
+  </script>
+</body>
+</html>

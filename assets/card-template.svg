@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252 352" width="252" height="352">
+  <defs>
+    <linearGradient id="card-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Card frame template — 63mm × 88mm at 96 DPI -->
+  <!-- Border (rarity color applied dynamically) -->
+  <rect x="0" y="0" width="252" height="352" rx="12" fill="#CD7F32"/>
+  <rect x="3" y="3" width="246" height="346" rx="10" fill="url(#card-bg)"/>
+
+  <!-- Barcode header zone -->
+  <rect x="10" y="10" width="232" height="16" fill="none" stroke="#333" stroke-width="0.5" rx="2"/>
+  <text x="126" y="21" text-anchor="middle" fill="#444" font-size="8" font-family="monospace">BARCODE HEADER</text>
+
+  <!-- Monster art zone (12×12 grid) -->
+  <rect x="20" y="35" width="212" height="172" fill="none" stroke="#333" stroke-width="0.5" rx="4"/>
+  <text x="126" y="125" text-anchor="middle" fill="#333" font-size="11" font-family="monospace">VOXEL MONSTER ART</text>
+  <text x="126" y="140" text-anchor="middle" fill="#333" font-size="9" font-family="monospace">12×12 pixel grid</text>
+
+  <!-- Name zone -->
+  <text x="126" y="222" text-anchor="middle" fill="#666" font-size="13" font-weight="bold" font-family="monospace">MONSTER NAME</text>
+  <line x1="20" y1="226" x2="232" y2="226" stroke="#333" stroke-width="0.5"/>
+
+  <!-- Type + stars -->
+  <text x="22" y="240" fill="#555" font-size="11" font-family="monospace">⚒ TYPE</text>
+  <text x="230" y="240" text-anchor="end" fill="#555" font-size="11" font-family="monospace">★★★</text>
+
+  <!-- Stats zone -->
+  <text x="22" y="258" fill="#FF6B6B" font-size="11" font-family="monospace" opacity="0.5">ATK: ####</text>
+  <text x="132" y="258" fill="#4ECDC4" font-size="11" font-family="monospace" opacity="0.5">DEF: ####</text>
+  <text x="22" y="272" fill="#45B7D1" font-size="11" font-family="monospace" opacity="0.5">SPD: ####</text>
+  <text x="132" y="272" fill="#96CEB4" font-size="11" font-family="monospace" opacity="0.5">RES: ####</text>
+
+  <!-- Ability zone -->
+  <rect x="20" y="278" width="212" height="36" rx="4" fill="none" stroke="#333" stroke-width="0.5"/>
+  <text x="126" y="300" text-anchor="middle" fill="#444" font-size="10" font-family="monospace">ABILITIES</text>
+
+  <!-- Set info -->
+  <text x="22" y="326" fill="#444" font-size="9" font-family="monospace">GUILD: ACG    SET: GEN-1</text>
+  <text x="22" y="338" fill="#444" font-size="9" font-family="monospace">#000/510      RARITY</text>
+
+  <!-- Barcode footer zone -->
+  <rect x="10" y="342" width="232" height="6" fill="none" stroke="#333" stroke-width="0.5" rx="2"/>
+</svg>

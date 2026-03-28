@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — Scanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 20px;
+      width: 100%;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-bottom: 2px solid #333;
+    }
+    .header h1 { color: #FF4500; font-size: 20px; letter-spacing: 3px; }
+    .scanner-area {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      margin: 20px auto;
+      border: 2px solid #FF4500;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .scan-line {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #FF4500;
+      box-shadow: 0 0 10px #FF4500;
+      animation: scan 2s ease-in-out infinite;
+    }
+    @keyframes scan {
+      0%, 100% { top: 10%; }
+      50% { top: 90%; }
+    }
+    .corners {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .corners::before, .corners::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border: 3px solid #FF4500;
+    }
+    .corners::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+    .corners::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+    .status {
+      text-align: center;
+      padding: 10px;
+      font-size: 14px;
+      color: #888;
+    }
+    .result {
+      width: 320px;
+      padding: 16px;
+      background: #1a1a2e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      margin: 10px;
+      display: none;
+    }
+    .result.active { display: block; }
+    .result h3 { color: #FFF; margin-bottom: 8px; }
+    .result .field {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 12px;
+      border-bottom: 1px solid #222;
+    }
+    .result .label { color: #888; }
+    .result .value { color: #FFF; }
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 8px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      color: #DDD;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); border-color: #FF4500; }
+    .manual-input {
+      width: 300px;
+      margin: 10px;
+      display: flex;
+      gap: 8px;
+    }
+    .manual-input input {
+      flex: 1;
+      padding: 8px;
+      background: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #FFF;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SCAN BARCODE</h1>
+    <p style="color: #888; font-size: 11px; margin-top: 4px;">Point camera at card barcode or enter ID manually</p>
+  </div>
+
+  <div class="scanner-area">
+    <video id="video" autoplay playsinline></video>
+    <div class="scan-line"></div>
+    <div class="corners"></div>
+  </div>
+
+  <div class="status" id="status">Initializing camera...</div>
+
+  <div class="manual-input">
+    <input type="text" id="card-input" placeholder="Enter card ID (e.g. BCM-001)" />
+    <button class="btn" onclick="lookupCard()">SCAN</button>
+  </div>
+
+  <div class="result" id="result">
+    <h3 id="res-name"></h3>
+    <div class="field"><span class="label">Card ID</span><span class="value" id="res-id"></span></div>
+    <div class="field"><span class="label">Type</span><span class="value" id="res-type"></span></div>
+    <div class="field"><span class="label">Element</span><span class="value" id="res-element"></span></div>
+    <div class="field"><span class="label">Rarity</span><span class="value" id="res-rarity"></span></div>
+    <div class="field"><span class="label">ATK / DEF</span><span class="value" id="res-stats1"></span></div>
+    <div class="field"><span class="label">SPD / RES</span><span class="value" id="res-stats2"></span></div>
+    <div class="field"><span class="label">Total Power</span><span class="value" id="res-power"></span></div>
+    <div class="field"><span class="label">Abilities</span><span class="value" id="res-abilities"></span></div>
+    <div class="field"><span class="label">Member</span><span class="value" id="res-member"></span></div>
+    <div style="text-align: center; margin-top: 12px;">
+      <button class="btn" onclick="viewModel()">View 3D Model</button>
+      <button class="btn" onclick="downloadSTL()">Download STL</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { generateAllCards } from '../generator/card.js';
+
+    const members = await fetch('../data/members.json').then(r => r.json());
+    const cards = generateAllCards(members);
+    const status = document.getElementById('status');
+    let currentCard = null;
+
+    // Try camera access
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      document.getElementById('video').srcObject = stream;
+      status.textContent = 'Camera active — scan a barcode or enter ID below';
+    } catch (e) {
+      status.textContent = 'Camera unavailable — enter card ID manually';
+    }
+
+    window.lookupCard = function() {
+      const input = document.getElementById('card-input').value.trim().toUpperCase();
+      const card = cards.find(c =>
+        c.id === input ||
+        c.memberId.toUpperCase() === input ||
+        c.memberName.toUpperCase() === input
+      );
+
+      if (!card) {
+        status.textContent = `Card not found: ${input}`;
+        document.getElementById('result').classList.remove('active');
+        return;
+      }
+
+      currentCard = card;
+      document.getElementById('res-name').textContent = card.monsterName;
+      document.getElementById('res-id').textContent = card.id;
+      document.getElementById('res-type').textContent = card.type;
+      document.getElementById('res-element').textContent = card.element;
+      document.getElementById('res-rarity').textContent = card.rarity;
+      document.getElementById('res-stats1').textContent = `${card.stats.atk} / ${card.stats.def}`;
+      document.getElementById('res-stats2').textContent = `${card.stats.spd} / ${card.stats.res}`;
+      document.getElementById('res-power').textContent = card.stats.total;
+      document.getElementById('res-abilities').textContent = card.abilities.join(', ');
+      document.getElementById('res-member').textContent = card.memberName;
+      document.getElementById('result').classList.add('active');
+      document.getElementById('result').style.borderColor = card.rarityColor;
+      status.textContent = `VERIFIED: ${card.monsterName}`;
+    };
+
+    window.viewModel = function() {
+      window.location.href = `../viewer/index.html`;
+    };
+
+    window.downloadSTL = function() {
+      if (!currentCard) return;
+      import('../generator/stl.js').then(({ voxelGridToSTL }) => {
+        const stlData = voxelGridToSTL(currentCard.voxelGrid, true);
+        const blob = new Blob([stlData], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentCard.monsterName.replace(/\s+/g, '_')}.stl`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    };
+  </script>
+</body>
+</html>
