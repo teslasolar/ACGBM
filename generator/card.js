@@ -2,7 +2,7 @@
 // Combines stats, monster, barcode, and abilities into a complete card
 
 import { hashSeed, calculateStats, getRarity, getRarityColor } from './stats.js';
-import { generateVoxelGrid, getVoxelColor, generateMonsterName, TYPE_MAP, ELEMENT_MAP } from './monster.js';
+import { generateVoxelGrid, getVoxelColor, generateMonsterName, TYPE_MAP, ELEMENT_MAP, isContourEdge, isSurfaceVoxel } from './monster.js';
 import { renderBarcodeSVG, encodeCardHeader, encodeCardFooter } from './barcode.js';
 
 const ABILITY_MAP = {
@@ -60,9 +60,24 @@ function renderCardSVG(card, width = 252, height = 352) {
   const headerBarcode = renderBarcodeSVG(encodeCardHeader(card), width - 20, 16, elemColor);
   const footerBarcode = renderBarcodeSVG(encodeCardFooter(card), width - 20, 16, elemColor);
 
-  // Render voxel art as pixel grid (front face, y-slice at z=6)
+  // Render voxel art as contoured pixel grid (front face, z=6-8 depth)
+  // Uses multiple z-slices for depth, contour outlines for cartoon look
   const pixelSize = Math.floor((width - 40) / 12);
   let voxelArt = '';
+
+  // Shadow underlay (offset slightly for depth pop)
+  for (let y = 11; y >= 0; y--) {
+    for (let x = 0; x < 12; x++) {
+      const idx = y * 144 + 6 * 12 + x;
+      if (card.voxelGrid[idx]) {
+        const px = 22 + x * pixelSize;
+        const py = 47 + (11 - y) * pixelSize;
+        voxelArt += `<rect x="${px}" y="${py}" width="${pixelSize}" height="${pixelSize}" fill="rgba(0,0,0,0.3)" rx="2"/>`;
+      }
+    }
+  }
+
+  // Main voxel art with contour outlines
   for (let y = 11; y >= 0; y--) {
     for (let x = 0; x < 12; x++) {
       const idx = y * 144 + 6 * 12 + x;
@@ -70,7 +85,20 @@ function renderCardSVG(card, width = 252, height = 352) {
         const color = getVoxelColor(card.voxelGrid, x, y, 6, card.element, card.seed);
         const px = 20 + x * pixelSize;
         const py = 45 + (11 - y) * pixelSize;
-        voxelArt += `<rect x="${px}" y="${py}" width="${pixelSize}" height="${pixelSize}" fill="${color}" rx="1"/>`;
+        const isEdge = isContourEdge(card.voxelGrid, x, y, 6);
+
+        // Filled voxel with rounded corners
+        voxelArt += `<rect x="${px}" y="${py}" width="${pixelSize}" height="${pixelSize}" fill="${color}" rx="2"/>`;
+
+        // Contour outline (thick dark border on edges for cartoon look)
+        if (isEdge) {
+          voxelArt += `<rect x="${px}" y="${py}" width="${pixelSize}" height="${pixelSize}" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="1.5" rx="2"/>`;
+        }
+
+        // Specular highlight (top-left corner for 3D pop)
+        if (y >= 9 && isSurfaceVoxel(card.voxelGrid, x, y, 6)) {
+          voxelArt += `<rect x="${px + 1}" y="${py + 1}" width="${pixelSize * 0.3}" height="${pixelSize * 0.3}" fill="rgba(255,255,255,0.35)" rx="1"/>`;
+        }
       }
     }
   }
