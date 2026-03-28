@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BARCODE MONSTERS — 3D Viewer</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0a0a1a;color:#e0e0e0;font-family:'Courier New',monospace}
+    .hdr{text-align:center;padding:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:2px solid #333}
+    .hdr h1{color:#FF4500;font-size:24px;letter-spacing:4px}
+    .hdr p{color:#888;font-size:12px;margin-top:4px}
+    .wrap{display:flex;flex-wrap:wrap;justify-content:center;gap:20px;padding:20px}
+    .mc{background:#1a1a2e;border:1px solid #333;border-radius:12px;padding:16px;width:320px;text-align:center}
+    .mc h3{color:#FFF;margin-bottom:8px}
+    canvas.vv{width:260px;height:260px;border-radius:8px;background:#0a0a1a;cursor:grab}
+    canvas.vv:active{cursor:grabbing}
+    .sr{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:12px 0;font-size:12px}
+    .st{padding:4px;border-radius:4px;background:rgba(255,255,255,0.05)}
+    .ov{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+    .ob{padding:3px 8px;border:1px solid #333;border-radius:10px;background:0;color:#888;cursor:pointer;font:9px monospace}
+    .ob:hover{border-color:#FF4500;color:#DDD}.ob.on{border-color:#FF4500;background:rgba(255,69,0,.15);color:#FF4500}
+    .ab{text-align:left;font-size:11px;margin:8px 0;padding:8px;background:rgba(255,255,255,.03);border-radius:6px}
+    .ab div{padding:2px 0;color:#CCC}
+    .b{display:inline-block;padding:8px 16px;margin:4px;border:1px solid #444;border-radius:6px;background:rgba(255,255,255,.05);color:#DDD;cursor:pointer;font:12px monospace}
+    .b:hover{background:rgba(255,255,255,.1);border-color:#FF4500}
+    .mi{font-size:10px;color:#666;margin-top:8px}
+    .bl{font-size:9px;color:#555;margin-top:4px;font-style:italic}
+    .ry{font-size:11px;padding:2px 8px;border-radius:10px;display:inline-block;margin:4px 0}
+  </style>
+</head>
+<body>
+  <div class="hdr"><h1>BARCODE MONSTERS</h1><p>3D Barcode Viewer — Ring Architecture</p></div>
+  <div class="wrap" id="wrap"></div>
+  <script type="module">
+    // R7 outer shell — imports through ring indexes only
+    import { generateAllCards } from '../R3/index.js';
+    import { modelStats, toBinarySTL } from '../R3/index.js';
+    import { OVERLAY_TYPES, ELEMENT_OVERLAYS } from '../R0/index.js';
+    import { collectVoxels, drawVoxels, renderCardSVG } from '../R5/index.js';
+    import { drawAura } from '../R5/index.js';
+    import { drawSparkles, drawConfetti, drawFireFX, drawLightning } from '../R5/index.js';
+    import { drawGlowContour, drawRainbowContour, drawThickContour } from '../R5/index.js';
+    import { loadMembers } from '../R2/index.js';
+
+    const members = await loadMembers('../..');
+    const cards = generateAllCards(members);
+    const wrap = document.getElementById('wrap');
+
+    cards.forEach((card, idx) => {
+      const ms = modelStats(card.voxelGrid);
+      const defaults = ELEMENT_OVERLAYS[card.element] || ['contour_thick'];
+      const active = new Set(defaults);
+      const allOpts = [...new Set([...defaults,'face_sparkle','face_hearts','fx_confetti','contour_thick'])];
+
+      const div = document.createElement('div');
+      div.className = 'mc'; div.style.borderColor = card.rarityColor;
+      div.innerHTML = `<h3>${card.monsterName}</h3><div style="color:${card.rarityColor};font-size:12px;margin-bottom:12px">${card.type} — ${card.element}</div><canvas class="vv" id="c${idx}" width="260" height="260"></canvas><div class="bl">3D barcode — depth encodes card identity</div><div class="ov" id="o${idx}"></div><div class="sr"><div class="st" style="color:#FF6B6B">ATK ${card.stats.atk}</div><div class="st" style="color:#4ECDC4">DEF ${card.stats.def}</div><div class="st" style="color:#45B7D1">SPD ${card.stats.spd}</div><div class="st" style="color:#96CEB4">RES ${card.stats.res}</div></div><span class="ry" style="border:1px solid ${card.rarityColor};color:${card.rarityColor}">${card.rarity} — ${card.stats.total} PWR</span><div class="ab">${card.abilities.map(a=>`<div>▸ ${a}</div>`).join('')}</div><div><button class="b" onclick="dl(${idx},'stl')">↓ STL</button><button class="b" onclick="dl(${idx},'svg')">↓ Card</button></div><div class="mi">${ms.tris} tris · ${ms.dims}<br>${ms.material} · ${ms.time}</div>`;
+      wrap.appendChild(div);
+
+      // Overlay toggle buttons
+      const od = document.getElementById(`o${idx}`);
+      allOpts.forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = `ob${active.has(name)?' on':''}`;
+        btn.textContent = name.replace(/^(aura_|fx_|face_|contour_)/,'');
+        btn.onclick = () => { active.has(name)?active.delete(name):active.add(name); btn.classList.toggle('on'); };
+        od.appendChild(btn);
+      });
+
+      // Canvas renderer
+      const canvas = document.getElementById(`c${idx}`);
+      const ctx = canvas.getContext('2d');
+      const sz = 260;
+      let rY = -0.6, rX = 0.4, drag = false, lm = {x:0,y:0}, frame = 0;
+      canvas.onmousedown = e => { drag=true; lm={x:e.clientX,y:e.clientY}; };
+      canvas.onmousemove = e => { if(!drag)return; rY+=(e.clientX-lm.x)*0.01; rX=Math.max(-1.2,Math.min(1.2,rX+(e.clientY-lm.y)*0.01)); lm={x:e.clientX,y:e.clientY}; };
+      canvas.onmouseup = canvas.onmouseleave = () => drag=false;
+
+      setInterval(() => {
+        if(!drag) rY += 0.012;
+        ctx.fillStyle='#0a0a1a'; ctx.fillRect(0,0,sz,sz);
+        const ol = [...active];
+        // Underlays
+        if(ol.some(o=>OVERLAY_TYPES[o]?.layer==='under')) drawAura(ctx,card.element,frame,sz);
+        // Voxels
+        const vx = collectVoxels(card.voxelGrid,card.element,card.seed,rY,rX,sz);
+        drawVoxels(ctx,vx);
+        // Overlays
+        for(const o of ol){
+          if(o==='fx_sparkles') drawSparkles(ctx,card.seed,frame,sz);
+          if(o==='fx_confetti') drawConfetti(ctx,card.seed,frame,sz);
+          if(o==='fx_fire') drawFireFX(ctx,card.seed,frame,sz);
+          if(o==='fx_lightning') drawLightning(ctx,card.seed,frame,sz);
+          if(o==='contour_thick') drawThickContour(ctx,vx);
+          if(o==='contour_glow') drawGlowContour(ctx,vx,card.rarityColor,frame);
+          if(o==='contour_rainbow') drawRainbowContour(ctx,vx,frame);
+        }
+        frame++;
+      }, 50);
+    });
+
+    window.dl = function(i, type) {
+      const c = cards[i];
+      if(type==='stl'){
+        const d=toBinarySTL(c.voxelGrid); const b=new Blob([d],{type:'application/octet-stream'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`${c.monsterName.replace(/\s+/g,'_')}.stl`; a.click(); URL.revokeObjectURL(u);
+      } else {
+        const s=renderCardSVG(c); const b=new Blob([s],{type:'image/svg+xml'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=`${c.monsterName.replace(/\s+/g,'_')}_card.svg`; a.click(); URL.revokeObjectURL(u);
+      }
+    };
+  </script>
+</body>
+</html>
